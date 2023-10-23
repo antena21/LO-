@@ -1,0 +1,211 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <time.h>
+
+void shell(int* items, int count)
+{
+    clock_t  start_s, end_s;
+    int i, j, gap, k;
+    int x, a[5];
+
+    a[0] = 9; a[1] = 5; a[2] = 3; a[3] = 2; a[4] = 1;
+    start_s = clock(); // Начало отсчета времени работы функции shell
+    for (k = 0; k < 5; k++) {
+        gap = a[k];
+        for (i = gap; i < count; ++i) {
+            x = items[i];
+            for (j = i - gap; (x < items[j]) && (j >= 0); j = j - gap)
+                items[j + gap] = items[j];
+            items[j + gap] = x;
+        }
+    }
+    end_s = clock() - start_s; // Конец отсчета времени работы функции shell
+    printf("%lf", (double)end_s / CLOCKS_PER_SEC); // Вывод времени работы функции shell
+}
+
+void qs(int* items, int left, int right) //вызов функции: qs(items, 0, count-1);
+{
+    int i, j;
+    int x, y;
+
+    i = left; j = right;
+
+    /* выбор компаранда */
+    x = items[(left + right) / 2];
+
+    do {
+        while ((items[i] < x) && (i < right)) i++;
+        while ((x < items[j]) && (j > left)) j--;
+
+        if (i <= j) {
+            y = items[i];
+            items[i] = items[j];
+            items[j] = y;
+            i++; j--;
+        }
+    } while (i <= j);
+
+    if (left < j) qs(items, left, j);
+    if (i < right) qs(items, i, right);
+}
+
+// function for making qsort work
+int Comp(const void* i1, const void* i2) 
+{
+    return (*(int*)i1 - *(int*)i2);
+}
+
+// file processing function
+void File_Process(char file_name[14]) 
+{
+    int* items;                                                         // pointer 
+    int count = 0;  
+    clock_t  start_qs, end_qs;                                          // qs time
+    // saving file length
+    FILE* curr_file = fopen(file_name, "r");
+    fseek(curr_file, 0, SEEK_SET);
+    while (true)
+    {
+        int val;
+        if (fscanf(curr_file, "%d", &val) == 1)
+        {
+            count++;
+        }
+        if (feof(curr_file))
+        {
+            break;
+        }
+    }
+    fclose(curr_file); 
+
+    items = (int*)malloc(count * sizeof(int));                          // memory expansion
+
+    // filling array from file
+    curr_file = fopen(file_name, "r");
+    fseek(curr_file, 0, SEEK_SET);
+    for (int i = 0; i < count; ++i)
+    {
+        fscanf(curr_file, "%d", &(*(items + i)));
+    }
+    fclose(curr_file);
+
+    clock_t start = clock(), end;                                       // start of qsort func
+
+    qsort(items, count, sizeof(int), Comp);                             // qsort call
+
+    end = clock() - start;                                              // end of qsort func
+
+    printf("  %lf  ", (double)end / CLOCKS_PER_SEC);                    // time consumed by qsort
+
+    curr_file = fopen(file_name, "r");
+    fseek(curr_file, 0, SEEK_SET);
+    for (int i = 0; i < count; ++i)
+    {
+        fscanf(curr_file, "%d", &(*(items + i)));
+    }
+    fclose(curr_file);
+
+    shell(items, count);                                                // shell call
+
+    curr_file = fopen(file_name, "r");
+    fseek(curr_file, 0, SEEK_SET);
+    for (int i = 0; i < count; ++i)
+    {
+        fscanf(curr_file, "%d", &(*(items + i)));
+    }
+    fclose(curr_file);
+
+    start_qs = clock();                                                 // start of qs func
+    qs(items, 1, count - 1);                                            // qs call
+    end_qs = clock() - start_qs;                                        // end of qs func
+
+    printf("  %lf\n\n", (double)end_qs / CLOCKS_PER_SEC);               // time consumed by qs
+
+    free(items);                                                        // freeing memory
+}
+
+int main(clock_t end_s)
+{
+    srand(time(NULL));                                                  // rng
+
+    clock_t  start_qs, end_qs;                                          // qs time
+    int TaskType; 
+
+    printf("Which task to execute?: ");
+    scanf("%d", &TaskType); 
+
+    switch (TaskType)
+    {
+        case 1:
+        {
+            int* items;
+            printf("\nSize\t   qsort     shell      qs\n");
+
+            for (int count = 10000; count <= 100000; count += 10000)    // array size variants from 10000 to 100000 with step of 10000
+            {  
+
+                printf("%d  ", count);
+
+                items = (int*)malloc(count * sizeof(int));              // memory expansion
+
+                // filling array with rng 
+                for (int i = 0; i < count; i++) 
+                {
+                    *(items + i) = rand() % 100;
+                }
+
+                clock_t start = clock(), end;                           // start of qsort func
+                qsort(items, count, sizeof(int), Comp);                 // qsort call
+                end = clock() - start;                                  // end of qsort func
+                printf("  %lf  ", (double)end / CLOCKS_PER_SEC);        // time consumed by qsort
+
+
+                for (int i = 0; i < count; i++) 
+                {
+                    *(items + i) = rand() % 100;
+                }
+
+                shell(items, count);                                    // shell call
+
+                for (int i = 0; i < count; i++) 
+                {
+                    *(items + i) = rand() % 100;
+                }
+
+                start_qs = clock();                                     // start of qs func
+                qs(items, 0, count - 1);                                // qs call
+                end_qs = clock() - start_qs;                            // end of qs func
+                printf("  %lf\n\n", (double)end_qs / CLOCKS_PER_SEC);   // time consumed by qs
+            }
+            free(items);                                                // freeing memory
+            break;
+        }
+        case 2:
+        {
+            printf("\nArray contains sequense of numbers from -20000 to 20000\n\n    qsort     shell      qs\n");
+            char file_name[14] = "ArrInc.txt";
+            File_Process(file_name); 
+            break;
+        }
+        case 3:
+        {
+            printf("\nArray contains sequence of decreasing numbers from 20000 to -20000\n\n    qsort     shell      qs\n");
+            char file_name[14] = "ArrDec.txt";
+            File_Process(file_name); 
+            break;
+        }
+        case 4:
+        {
+            printf("\nArray contains sequence of numbers from 0 to 20000 and backwards\n\n    qsort     shell      qs\n");
+            char file_name[14] = "ArrIncDec.txt";
+            File_Process(file_name); 
+            break;
+        }
+        default:
+        {
+            return 0;
+        }
+    }
+}
