@@ -1,0 +1,222 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <fstream>
+#include <iostream>
+#include <cstdlib>
+
+using namespace std;
+
+struct Element                                                              //creating structure for all elements of list
+{
+    char name[20];
+    char value[10];
+    Element* next;
+};
+
+class Dynamic_List                                                          //creating class for dynamic lists
+{
+public:
+    Element* head;                                                      //pointer for head of list
+    Element* tail;                                                      //pointer for tail of list
+    Dynamic_List()                                                      //constructor for all Dynamic_List objects
+    {
+        head = NULL;                                                    // => empty list
+    }
+
+    bool Check_Empty()
+    {
+        return (head == NULL);
+    }
+
+    void Element_in(char* Name, char* Value)                            //function for adding elements in list
+    {
+        Element* movable_var = new Element();
+        movable_var = head;
+        Element* element = new Element();
+        Element* prev_head = new Element();
+        prev_head = head;
+        strcpy_s(element->name, 20, Name);                              //reading info from file
+        strcpy_s(element->value, 10, Value);                             //
+        element->next = NULL;
+        if (Check_Empty())
+        {
+            head = element;
+            tail = element;                                             //if list is empty place element at the head
+        }
+        else
+        {
+            element->next = prev_head;
+            head = element;
+        }
+    }
+
+    Element* Search(char* Name)                                         //function for searching for element by name
+    {
+        Element* movable_var = new Element();                           //if desired element not first, look through list with additional variable
+        movable_var = head;
+        while (movable_var != NULL)
+        {
+            if (!strcmp(movable_var->name, Name))
+            {
+                return movable_var;
+            }
+            movable_var = movable_var->next;
+        }
+        return movable_var;
+    }
+
+    void Element_Remove(Element* element)                               //function for removing element from list
+    {
+        if (element == head)                                            //if desired element is first, move pointer forward
+        {
+            head = element->next;
+            delete element;
+            return;
+        }
+        Element* movable_var = new Element();                           //if desired element not first, look through list with additional variable
+        movable_var = head;
+        while (movable_var->next != element)
+        {
+            movable_var = movable_var->next;
+        }
+        movable_var->next = element->next;
+        delete element;
+    }
+
+    void Element_Edit(Element& element, char* Value)                    //function for editing desired element's value
+    {
+        strcpy_s(element.value, 10, Value);
+    }
+
+    void Element_Remove()
+    {
+        head = head->next;
+    }
+
+    void Queue_Display()
+    {
+        Element* movable_var = new Element();
+        movable_var = head;
+        while (movable_var != NULL) {
+            cout << movable_var->name << " ";
+            cout << movable_var->value << " " << endl;
+            movable_var = movable_var->next;
+        }
+        cout << "----------------\n";
+    }
+};
+
+
+
+int main(clock_t end_s)
+{
+    char* FileName = new char[50];
+    char* buf_name = new char[20];
+    char* buf_value = new char[10];
+    char* search_elem = new char[20];
+    char* new_value = new char[10];
+    char choice = ' ';
+
+    Dynamic_List myList;                                                    //creating dynamic list
+
+    cout << "Enter name of file: ";
+    cin >> FileName;
+
+    ifstream* inPointer = new ifstream(FileName);
+    if (!inPointer->good())
+    {
+        cout << "Error opening file!\n";
+        system("PAUSE");
+        return 0;
+    }
+    while (!inPointer->eof())                                               //reading file data
+    {
+        inPointer->getline(buf_name, 20, ' ');
+        inPointer->getline(buf_value, 10, ' ');
+        myList.Element_in(buf_name, buf_value);
+    }
+    inPointer->close();
+
+    cout << "Current Stack:\n";
+    myList.Queue_Display();
+
+    while (choice != '9')
+    {
+        cout << "What action to perfrom:\n 1 - add new element\n 2 - delete element\n 3 - delete element by value\n 4 - edit element\n 9 - exit programm\n ";
+        cin >> choice;
+
+        switch (choice)
+        {
+        case '1':
+        {
+            cout << "Enter data of new element that will be added to the list: ";
+            cin >> buf_name;
+            cout << "Enter value: ";
+            cin >> buf_value;
+            myList.Element_in(buf_name, buf_value);
+
+            myList.Queue_Display();
+
+            break;
+        }
+        case '2':
+        {
+            myList.Element_Remove();
+
+            myList.Queue_Display();
+
+            break;
+        }
+        case '3':
+        {
+            cout << "Enter element to remove: ";
+            cin >> search_elem;
+
+            if (myList.Search(search_elem))                                         //removing element from list
+            {
+                myList.Element_Remove(myList.Search(search_elem));
+            }
+
+            myList.Queue_Display();
+
+            break;
+        }
+        case '4':
+        {
+            cout << "Enter element to edit: ";
+            cin >> search_elem;
+            cout << "Enter new value: ";
+            cin >> new_value;
+
+            if (myList.Search(search_elem))                                         //editing element's value 
+            {
+                myList.Element_Edit(*myList.Search(search_elem), new_value);
+            }
+
+            myList.Queue_Display();
+
+            break;
+        }
+        case '9':
+        {
+            cout << "Exiting programm... \n";
+            break;
+        }
+        default:
+            cout << "NUH-UH!";
+            break;
+        }
+    }
+
+    ofstream* out = new ofstream(FileName);                                 //output for final list in file
+    while (myList.head != NULL)
+    {
+        out->write(myList.head->name, strlen(myList.head->name));
+        out->write(" ", 1);
+        out->write(myList.head->value, strlen(myList.head->value));
+        out->write(" ", 1);
+        myList.head = myList.head->next;
+    }
+    out->close();
+    system("PAUSE");
+    return 0;
+}
