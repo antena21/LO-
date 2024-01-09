@@ -1,0 +1,305 @@
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <stdio.h>
+#include <iostream>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <locale.h>
+#include <time.h>
+#include <vector>
+#include <fstream>
+//#include <sstream>
+
+using namespace std;
+
+#define MAX_SIZE 100
+
+int findUnconnectedNode(int parent[MAX_SIZE], int size) {
+	for (int i = 0; i < size; ++i) {
+			if (parent[i] == -1) {
+				return i;
+			}
+	}
+	return -1; // Если не найдено несвязанных вершин
+}
+
+void printTreeStructure(ofstream& test, const vector<vector<int>>& children, int vertex, int depth = 0) {
+    for (int i = 0; i < depth; ++i){
+        cout << "  ";
+		test << "  ";}
+
+    cout << vertex << "\n";
+	test << vertex << "\n";
+
+	//рекурсивно выводятся все смежные вершины для текущей вершины
+    for (int child : children[vertex]) {
+        printTreeStructure(test, children, child, depth + 1);
+    }
+}
+
+//создание непосредсвенной структуры
+void buildTreeStructure(const int parent[], int size, vector<vector<int>>& children) {
+    for (int i = 0; i < size; ++i) {
+        if (parent[i] != -1) {
+            children[parent[i]].push_back(i);
+        }
+    }
+}
+
+//Вывод остовного дерева
+void printPrimMST(ofstream& test, int graph[MAX_SIZE][MAX_SIZE], int size, int parent[MAX_SIZE]) {
+    vector<vector<int>> children(size);
+
+    buildTreeStructure(parent, size, children);
+
+    int root = findUnconnectedNode(parent, size);
+
+    if (root != -1) {
+        cout << "Визуализаяция остовного дерева:\n";
+        printTreeStructure(test, children, root);
+    } else {
+        cout << "Граф не содержит ни одного ребра.\n";
+    }
+}
+
+// Функция сохранения графа в файл
+void saveGraphToFile(int graph[MAX_SIZE][MAX_SIZE], int size, const char* filename) {
+	FILE* file = fopen(filename, "w");
+	if (file == NULL) {
+		printf("Ошибка при открытии файла\n");
+		return;
+	}
+	fprintf(file, "%d\n", size);
+	for (int i = 0; i < size; ++i) {
+		for (int j = 0; j < size; ++j) {
+			fprintf(file, "%d ", graph[i][j]);
+		}
+		fprintf(file, "\n");
+	}
+	fclose(file);
+	printf("\nГраф успешно сохранен в файл G.txt\n\n");
+}
+// Функция сохранения результата алгоритма Прима в файл
+void savePrimResultToFile(int parent[MAX_SIZE], int graph[MAX_SIZE][MAX_SIZE], int size, ofstream& test) 
+
+{
+	//FILE* file = fopen(filename, "w");
+	if (!test.is_open()) {
+		printf("Ошибка при открытии файла для сохранения результата\n");
+		return;
+	}
+	test << "Минимальное остовное дерево:" << endl;
+	//fprintf(file, "Минимальное остовное дерево:\n");
+	for (int i = 1; i < size; ++i) {
+		//fprintf(file, "Ребро: %d - %d, Вес: %d\n", parent[i], i, graph[i][parent[i]]);
+		test << "Ребро: " << parent[i] << " - " << i << ", Вес: " << graph[i][parent[i]] << endl;
+	}
+	//fclose(file);
+	printf("Результат успешно сохранен в файл result.txt\n\n");
+}
+// Функция для проверки существования файла
+bool fileExists(const char* filename) {
+	FILE* file = fopen(filename, "r");
+	if (file != NULL) {
+		fclose(file);
+		return true; // Файл существует
+	}
+	return false; // Файл не существует
+}
+// Загрузка графа из файла
+void loadGraphFromFile(int graph[MAX_SIZE][MAX_SIZE], int* size, const char* filename) {
+
+		FILE * file = fopen(filename, "r");
+	if (file == NULL) {
+		printf("\nОшибка при открытии файла\n");
+		return;
+	}
+	fscanf(file, "%d", size);
+	for (int i = 0; i < *size; ++i) {
+		for (int j = 0; j < *size; ++j) {
+			fscanf(file, "%d", &graph[i][j]);
+		}
+	}
+	fclose(file);
+}
+// Функция для заполнения неориентированного графа случайными числами
+void fillUndirectedGraphRandom(int graph[MAX_SIZE][MAX_SIZE], int size)
+{
+	srand(time(NULL));
+	// Заполнение графа нулями и единицами на главной диагонали
+	for (int i = 0; i < size; ++i) {
+		for (int j = 0; j < size; ++j) {
+			if (i == j) {
+				graph[i][j] = 0; // Главная диагональ остается нулевой
+			}
+			else {
+				graph[i][j] = rand() % 2; // Заполнение ребер 0 или 1
+				graph[j][i] = graph[i][j]; // Отражение изменений для неориентированного графа
+			}
+		}
+	}
+	// Замена единиц случайными числами
+	for (int i = 0; i < size; ++i) {
+		for (int j = 0; j < size; ++j) {
+			if (i != j && graph[i][j] == 1) {
+				graph[i][j] = rand() % 100; // Заполнение случайным числом вместо единицы
+				graph[j][i] = graph[i][j]; // Отражение изменений для неориентированного графа
+			}
+		}
+	}
+}
+// Вывод графа в консоль
+void printGraph(int graph[MAX_SIZE][MAX_SIZE], int size)
+{
+	printf("\nГраф:\n");
+	for (int i = 0; i < size; ++i)
+	{
+		for (int j = 0; j < size; ++j)
+		{
+			printf("%3d ", graph[i][j]);
+		}
+		printf("\n");
+	}
+}
+// Функция для нахождения несвязных вершин
+
+// Функция выполнения алгоритма Прима для графа
+void primAlgorithm(ofstream& test, int graph[MAX_SIZE][MAX_SIZE], int size, int parent[MAX_SIZE]) {
+	int minEdge[MAX_SIZE]; // Минимальные веса рёбер
+	bool visited[MAX_SIZE]; // Посещали ли вершины
+	// Инициализация значений
+	for (int i = 0; i < size; ++i) {
+		minEdge[i] = INT_MAX; // Установка начальных значений весов рёбер как максимальное значение
+		visited[i] = false; // Начально ни одна вершина не посещена
+		parent[i] = -1; // Начально нет родительской вершины
+	}
+	minEdge[0] = 0; // Стартовая вершина, вес ребра равен 0
+	for (int count = 0; count < size - 1; ++count) {
+		int minVertex = -1; // Минимальный индекс вершины
+		for (int v = 0; v < size; ++v) {
+			if (!visited[v] && (minVertex == -1 || minEdge[v] < minEdge[minVertex])) {
+				minVertex = v; // Нахождение вершины с минимальным весом ребра
+			}
+		}
+		visited[minVertex] = true; // Включаем найденную вершину в остовное дерево
+		// Обновляем веса смежных вершин
+		for (int v = 0; v < size; ++v) {
+			if (graph[minVertex][v] != 0 && !visited[v] && graph[minVertex][v] <
+				minEdge[v]) {
+				parent[v] = minVertex;
+				minEdge[v] = graph[minVertex][v];
+			}
+		}
+	}
+	// Вывод ребер минимального остовного дерева
+	printf("\nМинимальное остовное дерево:\n");
+
+	int D = 0;
+	struct Node* root = NULL;
+	for (int i = 1; i < size; ++i) {
+		if (parent[i] != -1) {
+			printf("Ребро: %d - %d, Вес: %d\n", parent[i], i, graph[i][parent[i]]);
+		}
+		else {
+			printf("Ребро: %d - %d, не существует\n", findUnconnectedNode(parent, size),i);
+		}
+	}
+
+	printPrimMST(test, graph, size, parent);
+}
+
+int main(void) {
+	setlocale(LC_ALL, "RUS");
+	int graph[MAX_SIZE][MAX_SIZE];
+	int size, choice;
+	char filename[50];
+	int parent[MAX_SIZE];
+	bool b = {};
+///
+    char buffer[20];
+	ofstream ttt;
+///
+
+	printf("Курсовая работа\n");
+	printf("Выполнил: Кузьмин Данила 22ВВВ3\n");
+	
+	do {
+		printf("Меню:\n");
+		printf("1. Загрузить неориентированный граф из файла\n");
+		printf("2. Заполнить неориентированный граф автоматически\n");
+		printf("3. Завершить и выйти из программы\n");
+		printf("Выберите номер от 1-3: ");
+///
+			while (1) {
+				cin >> buffer;
+
+				if (atoi(buffer) == 0 && buffer[0] != '0') {
+
+					cout << "Введите только целое число" << endl;
+					continue;
+				}
+                if (buffer[1] != 0) {
+                    cout << "only integers" << endl;
+                    continue;
+                }
+				else {
+					choice = atoi(buffer);
+					break;
+				}
+            };
+///
+		switch (choice) {
+		case 1:
+			printf("\nВведите имя файла для загрузки: ");
+			scanf("%s", filename);
+			if (!fileExists(filename)) {
+				printf("\nВведён несуществующий файл\n\n");
+				break;
+			}
+			loadGraphFromFile(graph, &size, filename);
+			printGraph(graph, size);
+			ttt.open("result.txt");
+			primAlgorithm(ttt, graph, size, parent);
+			saveGraphToFile(graph, size, "G.txt");
+			savePrimResultToFile(parent, graph, size, ttt);
+			ttt.close();
+			break;
+		case 2:
+			printf("\nВведите размер неориентированного графа: ");
+
+			while (1) {
+				cin >> buffer;
+
+				if (atoi(buffer) == 0 && buffer[0] != '0') {
+
+					cout << "Введите только целое число" << endl;
+					continue;
+				}
+				else {
+					size = atoi(buffer);
+					break;
+				}
+
+			}
+
+			if (size <= 0) {
+				printf("\nВведён неверный размер графа\n\n");
+				break;
+			}
+			fillUndirectedGraphRandom(graph, size);
+			printGraph(graph, size);
+			ttt.open("result.txt");
+			primAlgorithm(ttt, graph, size, parent);
+			saveGraphToFile(graph, size, "G.txt");
+			//cout << "jope" << endl;
+			savePrimResultToFile(parent, graph, size, ttt);
+			ttt.close();
+			break;
+		case 3:
+			return 3; // Завершение программы при выборе "3"
+		default:
+			printf("\nСделан неверный выбор. Пожалуйста, выберите снова.\n\n");
+			break;
+		}
+	} while (true);
+}
